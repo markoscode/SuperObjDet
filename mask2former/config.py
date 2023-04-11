@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
-from detectron2.detectron2.config import CfgNode as CN
+from detectron2.config import CfgNode as CN
 
 
 def add_maskformer2_config(cfg):
