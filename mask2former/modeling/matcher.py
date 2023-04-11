@@ -9,7 +9,7 @@ from scipy.optimize import linear_sum_assignment
 from torch import nn
 from torch.cuda.amp import autocast
 
-from detectron2.projects.point_rend.point_features import point_sample
+from detectron2.projects.PointRend.point_rend.point_features import point_sample
 
 
 def batch_dice_loss(inputs: torch.Tensor, targets: torch.Tensor):
