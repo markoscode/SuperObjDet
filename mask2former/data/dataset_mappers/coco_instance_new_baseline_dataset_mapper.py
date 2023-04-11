@@ -6,11 +6,11 @@ import logging
 import numpy as np
 import torch
 
-from detectron2.detectron2.config import configurable
-from detectron2.detectron2.data import detection_utils as utils
-from detectron2.detectron2.data import transforms as T
-from detectron2.detectron2.data.transforms import TransformGen
-from detectron2.detectron2.structures import BitMasks, Instances
+from detectron2.config import configurable
+from detectron2.data import detection_utils as utils
+from detectron2.data import transforms as T
+from detectron2.data.transforms import TransformGen
+from detectron2.structures import BitMasks, Instances
 
 from pycocotools import mask as coco_mask
 

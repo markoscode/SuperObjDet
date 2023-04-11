@@ -9,8 +9,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from detectron2.detectron2.utils.comm import get_world_size
-from detectron2.detectron2.projects.point_rend.point_features import (
+from detectron2.utils.comm import get_world_size
+from detectron2.projects.point_rend.point_features import (
     get_uncertain_point_coords_with_randomness,
     point_sample,
 )

@@ -6,9 +6,9 @@ import fvcore.nn.weight_init as weight_init
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.detectron2.config import configurable
-from detectron2.detectron2.layers import Conv2d, ShapeSpec, get_norm
-from detectron2.detectron2.modeling import SEM_SEG_HEADS_REGISTRY
+from detectron2.config import configurable
+from detectron2.layers import Conv2d, ShapeSpec, get_norm
+from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 
 from ..transformer_decoder.maskformer_transformer_decoder import StandardTransformerDecoder
 from ..pixel_decoder.fpn import build_pixel_decoder

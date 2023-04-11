@@ -2,8 +2,8 @@
 import json
 import os
 
-from detectron2.detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.detectron2.utils.file_io import PathManager
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.utils.file_io import PathManager
 
 
 MAPILLARY_VISTAS_SEM_SEG_CATEGORIES = [

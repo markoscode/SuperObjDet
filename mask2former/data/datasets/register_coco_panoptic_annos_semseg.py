@@ -2,10 +2,10 @@
 import json
 import os
 
-from detectron2.detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.detectron2.data.datasets import load_sem_seg
-from detectron2.detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
-from detectron2.detectron2.utils.file_io import PathManager
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.data.datasets import load_sem_seg
+from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
+from detectron2.utils.file_io import PathManager
 
 
 _PREDEFINED_SPLITS_COCO_PANOPTIC = {

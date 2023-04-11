@@ -6,10 +6,10 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-from detectron2.detectron2.config import configurable
-from detectron2.detectron2.data import detection_utils as utils
-from detectron2.detectron2.data import transforms as T
-from detectron2.detectron2.structures import BitMasks, Instances
+from detectron2.config import configurable
+from detectron2.data import detection_utils as utils
+from detectron2.data import transforms as T
+from detectron2.structures import BitMasks, Instances
 
 from .mask_former_semantic_dataset_mapper import MaskFormerSemanticDatasetMapper
 

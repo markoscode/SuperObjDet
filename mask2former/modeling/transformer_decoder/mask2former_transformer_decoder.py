@@ -7,8 +7,8 @@ import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
 
-from detectron2.detectron2.config import configurable
-from detectron2.detectron2.layers import Conv2d
+from detectron2.config import configurable
+from detectron2.layers import Conv2d
 
 from .position_encoding import PositionEmbeddingSine
 from .maskformer_transformer_decoder import TRANSFORMER_DECODER_REGISTRY

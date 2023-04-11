@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
 
-from detectron2.detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.detectron2.data.datasets import load_sem_seg
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.data.datasets import load_sem_seg
 
 MAPILLARY_VISTAS_SEM_SEG_CATEGORIES = [
     {
