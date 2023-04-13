@@ -21,17 +21,17 @@ from typing import Any, Dict, List, Set
 
 import torch
 
-import detectron2.detectron2.utils.comm as comm
-from detectron2.detectron2.checkpoint import DetectionCheckpointer
-from detectron2.detectron2.config import get_cfg
-from detectron2.detectron2.data import MetadataCatalog, build_detection_train_loader
-from detectron2.detectron2.engine import (
+import detectron2.utils.comm as comm
+from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.config import get_cfg
+from detectron2.data import MetadataCatalog, build_detection_train_loader
+from detectron2.engine import (
     DefaultWSTrainer,
     default_argument_parser,
     default_setup,
     launch,
 )
-from detectron2.detectron2.evaluation import (
+from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
     COCOEvaluator,
@@ -41,9 +41,9 @@ from detectron2.detectron2.evaluation import (
     SemSegEvaluator,
     verify_results,
 )
-from detectron2.detectron2.projects.deeplab import add_deeplab_config, build_lr_scheduler
-from detectron2.detectron2.solver.build import maybe_add_gradient_clipping
-from detectron2.detectron2.utils.logger import setup_logger
+from detectron2.projects.deeplab import add_deeplab_config, build_lr_scheduler
+from detectron2.solver.build import maybe_add_gradient_clipping
+from detectron2.utils.logger import setup_logger
 
 # MaskFormer
 from mask2former import (
