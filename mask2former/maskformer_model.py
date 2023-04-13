@@ -352,7 +352,7 @@ class MaskFormer(nn.Module):
         scores_per_image, topk_indices = scores.flatten(0, 1).topk(self.test_topk_per_image, sorted=False)
         labels_per_image = labels[topk_indices]
 
-        topk_indices = topk_indices // self.sem_seg_head.num_classes
+        topk_indices = torch.div(topk_indices, self.sem_seg_head.num_classes, rounding_mode="floor")
         # mask_pred = mask_pred.unsqueeze(1).repeat(1, self.sem_seg_head.num_classes, 1).flatten(0, 1)
         mask_pred = mask_pred[topk_indices]
 

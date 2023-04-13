@@ -26,7 +26,7 @@ from detectron2.detectron2.checkpoint import DetectionCheckpointer
 from detectron2.detectron2.config import get_cfg
 from detectron2.detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.detectron2.engine import (
-    DefaultTrainer,
+    DefaultWSTrainer,
     default_argument_parser,
     default_setup,
     launch,
@@ -58,9 +58,9 @@ from mask2former import (
 )
 
 
-class Trainer(DefaultTrainer):
+class Trainer(DefaultWSTrainer):
     """
-    Extension of the Trainer class adapted to MaskFormer.
+    Extension of the WSTrainer class adapted to MaskFormer.
     """
 
     @classmethod
