@@ -296,14 +296,9 @@ def setup(args):
     return cfg
 
 
-def main(args):
+def main(args, logger=None):
+    logger.debug
     cfg = setup(args)
-    wandb.init(
-        project=args.wandb_project_name,
-        name=args.wandb_run_name,
-        entity=args.wandb_entity,
-        config=cfg,
-    )
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
@@ -324,6 +319,12 @@ def main(args):
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
     print("Command Line Args:", args)
+    wandb.init(
+        project=args.wandb_project_name,
+        name=args.wandb_run_name,
+        entity=args.wandb_entity,
+        config=args,
+    )
     launch(
         main,
         args.num_gpus,
