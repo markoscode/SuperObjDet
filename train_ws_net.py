@@ -296,8 +296,7 @@ def setup(args):
     return cfg
 
 
-def main(args, logger=None):
-    logger.debug
+def main(args):
     cfg = setup(args)
     if args.eval_only:
         model = Trainer.build_model(cfg)
