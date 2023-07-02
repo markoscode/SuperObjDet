@@ -88,6 +88,15 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
 
         return memory, spatial_shapes, level_start_index
 
+    def set_max_net(self):
+        return self.encoder.set_max_net()
+
+    def set_active_subnet(self, depth_list=None, **kwargs):
+        self.encoder.set_active_subnet(depth_list=depth_list, **kwargs)
+
+    def sample_active_subnet(self):
+        return self.encoder.sample_active_subnet()
+
 
 class MSDeformAttnTransformerEncoderLayer(nn.Module):
     def __init__(self,
@@ -130,10 +139,12 @@ class MSDeformAttnTransformerEncoderLayer(nn.Module):
 
         return src
 
-#edit here
 class MSDeformAttnTransformerEncoder(nn.Module):
     def __init__(self, encoder_layer, num_layers):
         super().__init__()
+        #weight sharing
+        self.DEPTH_LIST = [np.arange(3)]
+        self.runtime_depth = 0
         self.layers = _get_clones(encoder_layer, num_layers)
         self.num_layers = num_layers
 
@@ -155,10 +166,34 @@ class MSDeformAttnTransformerEncoder(nn.Module):
     def forward(self, src, spatial_shapes, level_start_index, valid_ratios, pos=None, padding_mask=None):
         output = src
         reference_points = self.get_reference_points(spatial_shapes, valid_ratios, device=src.device)
-        for _, layer in enumerate(self.layers):
+        active_layers = self.layers[:len(self.layers)-self.runtime_depth]
+        for _, layer in enumerate(active_layers):
             output = layer(output, pos, reference_points, spatial_shapes, level_start_index, padding_mask)
 
         return output
+
+    def set_max_net(self):
+        self.set_active_subnet(depth_list=[max(d) for d in self.DEPTH_LIST])
+        arch_config = {
+            "depth_list": [max(d) for d in self.DEPTH_LIST]
+        }
+        return arch_config
+
+    def set_active_subnet(self, depth_list=None, **kwargs):
+        self.runtime_depth = max(self.DEPTH_LIST[0])-depth_list[0]
+
+    def sample_active_subnet(self):
+        import random
+         # sample depth
+        depth_setting = [random.choice(self.DEPTH_LIST)]
+
+        arch_config = {
+            "depth_list": depth_setting
+        }
+
+        self.set_active_subnet(**arch_config)
+        return arch_config
+
 
 
 @SEM_SEG_HEADS_REGISTRY.register()
@@ -356,3 +391,12 @@ class MSDeformAttnPixelDecoder(nn.Module):
                 num_cur_levels += 1
 
         return self.mask_features(out[-1]), out[0], multi_scale_features
+
+    def set_max_net(self):
+        return self.transformer.set_max_net()
+
+    def set_active_subnet(self, depth_list=None, **kwargs):
+        self.transformer.set_active_subnet(depth_list=depth_list, **kwargs)
+
+    def sample_active_subnet(self):
+        return self.transformer.sample_active_subnet()
