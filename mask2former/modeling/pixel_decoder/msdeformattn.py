@@ -185,7 +185,7 @@ class MSDeformAttnTransformerEncoder(nn.Module):
     def sample_active_subnet(self):
         import random
          # sample depth
-        depth_setting = [random.choice(self.DEPTH_LIST)]
+        depth_setting = [random.choice(self.DEPTH_LIST[0])]
 
         arch_config = {
             "depth_list": depth_setting
