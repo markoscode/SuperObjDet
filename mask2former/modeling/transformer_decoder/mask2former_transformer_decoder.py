@@ -6,6 +6,7 @@ from typing import Optional
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
+import numpy as np
 
 from detectron2.config import configurable
 from detectron2.layers import Conv2d
@@ -270,6 +271,10 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         assert mask_classification, "Only support mask classification model"
         self.mask_classification = mask_classification
 
+        #weight sharing
+        self.DEPTH_LIST = [np.arange(3)]
+        self.runtime_depth = 0
+
         # positional encoding
         N_steps = hidden_dim // 2
         self.pe_layer = PositionEmbeddingSine(N_steps, normalize=True)
@@ -392,8 +397,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         outputs_class, outputs_mask, attn_mask = self.forward_prediction_heads(output, mask_features, attn_mask_target_size=size_list[0])
         predictions_class.append(outputs_class)
         predictions_mask.append(outputs_mask)
-
-        for i in range(self.num_layers):
+        for i in range(self.num_layers - self.runtime_depth):
             level_index = i % self.num_feature_levels
             attn_mask[torch.where(attn_mask.sum(-1) == attn_mask.shape[-1])] = False
             # attention: cross-attention first
@@ -459,3 +463,25 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             ]
         else:
             return [{"pred_masks": b} for b in outputs_seg_masks[:-1]]
+
+    def set_max_net(self):
+        self.set_active_subnet(depth_list=[max(d) for d in self.DEPTH_LIST])
+        arch_config = {
+            "depth_list": [max(d) for d in self.DEPTH_LIST]
+        }
+        return arch_config
+
+    def set_active_subnet(self, depth_list=None, **kwargs):
+        self.runtime_depth = max(self.DEPTH_LIST[0])-depth_list[0]
+
+    def sample_active_subnet(self):
+        import random
+         # sample depth
+        depth_setting = [random.choice(self.DEPTH_LIST[0])]
+
+        arch_config = {
+            "depth_list": depth_setting
+        }
+
+        self.set_active_subnet(**arch_config)
+        return arch_config
