@@ -423,7 +423,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             predictions_class.append(outputs_class)
             predictions_mask.append(outputs_mask)
 
-        assert len(predictions_class) == self.num_layers + 1
+        assert len(predictions_class) == self.num_layers - self.runtime_depth + 1
 
         out = {
             'pred_logits': predictions_class[-1],
