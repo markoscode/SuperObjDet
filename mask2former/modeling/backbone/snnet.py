@@ -3,8 +3,7 @@ from .stiching_layers.stitching_layers import STITCH_LAYERS, SimpleStitchMoE
 import torch
 import torch.nn as nn
 import numpy as np
-from detectron2.modeling.backbone.backbone import Backbone
-from .build import BACKBONE_REGISTRY
+from detectron2.modeling import BACKBONE_REGISTRY, Backbone
 from .swin import SwinTransformer
 
 def unpaired_stitching(front_depth=12, end_depth=24, idx_limit=None):
@@ -155,21 +154,21 @@ class SNNet(Backbone):
         new_stitch = None
         super(SNNet, self).__init__()
         for anc_name in anchor_names:
-            pretrain_img_size = cfg.MODEL.SWIN[anc_name].PRETRAIN_IMG_SIZE
-            patch_size = cfg.MODEL.SWIN[anc_name].PATCH_SIZE
+            pretrain_img_size = cfg.MODEL.SWIN.PRETRAIN_IMG_SIZE
+            patch_size = cfg.MODEL.SWIN.PATCH_SIZE
             embed_dim = cfg.MODEL.SWIN[anc_name].EMBED_DIM
             depths = cfg.MODEL.SWIN[anc_name].DEPTHS
             num_heads = cfg.MODEL.SWIN[anc_name].NUM_HEADS
             window_size = cfg.MODEL.SWIN[anc_name].WINDOW_SIZE
-            mlp_ratio = cfg.MODEL.SWIN[anc_name].MLP_RATIO
-            qkv_bias = cfg.MODEL.SWIN[anc_name].QKV_BIAS
-            qk_scale = cfg.MODEL.SWIN[anc_name].QK_SCALE
-            drop_rate = cfg.MODEL.SWIN[anc_name].DROP_RATE
+            mlp_ratio = cfg.MODEL.SWIN.MLP_RATIO
+            qkv_bias = cfg.MODEL.SWIN.QKV_BIAS
+            qk_scale = cfg.MODEL.SWIN.QK_SCALE
+            drop_rate = cfg.MODEL.SWIN.DROP_RATE
             attn_drop_rate = cfg.MODEL.SWIN[anc_name].ATTN_DROP_RATE
-            drop_path_rate = cfg.MODEL.SWIN[anc_name].DROP_PATH_RATE
+            drop_path_rate = cfg.MODEL.SWIN.DROP_PATH_RATE
             ape = cfg.MODEL.SWIN[anc_name].APE
             patch_norm = cfg.MODEL.SWIN[anc_name].PATCH_NORM
-            use_checkpoint = cfg.MODEL.SWIN[anc_name].USE_CHECKPOINT
+            use_checkpoint = cfg.MODEL.SWIN.USE_CHECKPOINT
             anchors.append(SwinTransformer(
                 pretrain_img_size,
                 patch_size,
