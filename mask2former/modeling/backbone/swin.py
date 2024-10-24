@@ -17,6 +17,7 @@ from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
 
+_to_2tuple = nn.modules.utils._ntuple(2)
 
 class Mlp(nn.Module):
     """Multilayer perceptron."""
@@ -78,7 +79,8 @@ class WindowAttention(nn.Module):
         dim (int): Number of input channels.
         window_size (tuple[int]): The height and width of the window.
         num_heads (int): Number of attention heads.
-        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
+        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value.
+            Default: True
         qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
         attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
         proj_drop (float, optional): Dropout ratio of output. Default: 0.0
@@ -100,7 +102,7 @@ class WindowAttention(nn.Module):
         self.window_size = window_size  # Wh, Ww
         self.num_heads = num_heads
         head_dim = dim // num_heads
-        self.scale = qk_scale or head_dim ** -0.5
+        self.scale = qk_scale or head_dim**-0.5
 
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
@@ -125,7 +127,7 @@ class WindowAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-        trunc_normal_(self.relative_position_bias_table, std=0.02)
+        nn.init.trunc_normal_(self.relative_position_bias_table, std=0.02)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, mask=None):
@@ -214,7 +216,7 @@ class SwinTransformerBlock(nn.Module):
         self.norm1 = norm_layer(dim)
         self.attn = WindowAttention(
             dim,
-            window_size=to_2tuple(self.window_size),
+            window_size=_to_2tuple(self.window_size),
             num_heads=num_heads,
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
@@ -222,7 +224,12 @@ class SwinTransformerBlock(nn.Module):
             proj_drop=drop,
         )
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        if drop_path > 0.0:
+            from timm.models.layers import DropPath
+
+            self.drop_path = DropPath(drop_path)
+        else:
+            self.drop_path = nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
@@ -351,7 +358,8 @@ class BasicLayer(nn.Module):
         attn_drop (float, optional): Attention dropout rate. Default: 0.0
         drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
         norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
+        downsample (nn.Module | None, optional): Downsample layer at the end of the layer.
+            Default: None
         use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False.
     """
 
@@ -403,13 +411,15 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x, H, W):
+    def forward(self, x, H, W, extract_feat=False, start=None, end=None):
         """Forward function.
         Args:
             x: Input feature, tensor size (B, H*W, C).
             H, W: Spatial resolution of the input feature.
         """
-
+        features = {}
+        if extract_feat:
+            features[-1] = x.detach()
         # calculate attention mask for SW-MSA
         Hp = int(np.ceil(H / self.window_size)) * self.window_size
         Wp = int(np.ceil(W / self.window_size)) * self.window_size
@@ -439,18 +449,29 @@ class BasicLayer(nn.Module):
             attn_mask == 0, float(0.0)
         )
 
-        for blk in self.blocks:
+        for i, blk in enumerate(self.blocks):
+            if start is not None and i < start:
+                continue
             blk.H, blk.W = H, W
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x, attn_mask)
             else:
                 x = blk(x, attn_mask)
-        if self.downsample is not None:
+
+            if extract_feat:
+                features[i] = x.detach()
+            if end is not None and i == end:
+                break
+        layer_out = None
+        if end is None and self.downsample is not None:
             x_down = self.downsample(x, H, W)
             Wh, Ww = (H + 1) // 2, (W + 1) // 2
-            return x, H, W, x_down, Wh, Ww
+            layer_out = [x, H, W, x_down, Wh, Ww]
         else:
-            return x, H, W, x, H, W
+            layer_out = [x, H, W, x, H, W]
+        if extract_feat:
+            layer_out.append(features)
+        return tuple(layer_out)
 
 
 class PatchEmbed(nn.Module):
@@ -464,7 +485,7 @@ class PatchEmbed(nn.Module):
 
     def __init__(self, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
-        patch_size = to_2tuple(patch_size)
+        patch_size = _to_2tuple(patch_size)
         self.patch_size = patch_size
 
         self.in_chans = in_chans
@@ -495,10 +516,10 @@ class PatchEmbed(nn.Module):
         return x
 
 
-class SwinTransformer(nn.Module):
+class SwinTransformer(Backbone):
     """Swin Transformer backbone.
-        A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
-          https://arxiv.org/pdf/2103.14030
+        A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted
+            Windows`  - https://arxiv.org/pdf/2103.14030
     Args:
         pretrain_img_size (int): Input image size for training the pretrained model,
             used in absolute postion embedding. Default 224.
@@ -529,8 +550,8 @@ class SwinTransformer(nn.Module):
         patch_size=4,
         in_chans=3,
         embed_dim=96,
-        depths=[2, 2, 6, 2],
-        num_heads=[3, 6, 12, 24],
+        depths=(2, 2, 6, 2),
+        num_heads=(3, 6, 12, 24),
         window_size=7,
         mlp_ratio=4.0,
         qkv_bias=True,
@@ -565,8 +586,8 @@ class SwinTransformer(nn.Module):
 
         # absolute position embedding
         if self.ape:
-            pretrain_img_size = to_2tuple(pretrain_img_size)
-            patch_size = to_2tuple(patch_size)
+            pretrain_img_size = _to_2tuple(pretrain_img_size)
+            patch_size = _to_2tuple(patch_size)
             patches_resolution = [
                 pretrain_img_size[0] // patch_size[0],
                 pretrain_img_size[1] // patch_size[1],
@@ -575,7 +596,7 @@ class SwinTransformer(nn.Module):
             self.absolute_pos_embed = nn.Parameter(
                 torch.zeros(1, embed_dim, patches_resolution[0], patches_resolution[1])
             )
-            trunc_normal_(self.absolute_pos_embed, std=0.02)
+            nn.init.trunc_normal_(self.absolute_pos_embed, std=0.02)
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
@@ -588,7 +609,7 @@ class SwinTransformer(nn.Module):
         self.layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
             layer = BasicLayer(
-                dim=int(embed_dim * 2 ** i_layer),
+                dim=int(embed_dim * 2**i_layer),
                 depth=depths[i_layer],
                 num_heads=num_heads[i_layer],
                 window_size=window_size,
@@ -604,7 +625,7 @@ class SwinTransformer(nn.Module):
             )
             self.layers.append(layer)
 
-        num_features = [int(embed_dim * 2 ** i) for i in range(self.num_layers)]
+        num_features = [int(embed_dim * 2**i) for i in range(self.num_layers)]
         self.num_features = num_features
 
         # add a norm layer for each output
@@ -614,6 +635,37 @@ class SwinTransformer(nn.Module):
             self.add_module(layer_name, layer)
 
         self._freeze_stages()
+        self._out_features = ["p{}".format(i) for i in self.out_indices]
+        self._out_feature_channels = {
+            "p{}".format(i): self.embed_dim * 2**i for i in self.out_indices
+        }
+        self._out_feature_strides = {"p{}".format(i): 2 ** (i + 2) for i in self.out_indices}
+        self._size_devisibility = 32
+
+        self.apply(self._init_weights)
+
+    def forward_patch_embed(self, x):
+        x = self.patch_embed(x)
+        Wh, Ww = x.size(2), x.size(3)
+        if self.ape:
+            absolute_pos_embed = F.interpolate(
+                self.absolute_pos_embed, size=(Wh, Ww), mode="bicubic"
+            )
+            x = (x + absolute_pos_embed).flatten(2).transpose(1, 2)  # B Wh*Ww C
+        else:
+            x = x.flatten(2).transpose(1, 2)
+        x = self.pos_drop(x)
+        return x
+
+    def extract_block_features(self, x):
+        features = {}
+        x = self.forward_patch_embed(x)
+        outs = {}
+        for i in range(self.num_layers):
+            layer = self.layers[i]
+            x_out, H, W, x, Wh, Ww, features = layer(x, Wh, Ww, extract_feat=True)
+            features[i] = features
+        return features
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -632,21 +684,80 @@ class SwinTransformer(nn.Module):
                 for param in m.parameters():
                     param.requires_grad = False
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-
-        def _init_weights(m):
-            if isinstance(m, nn.Linear):
-                trunc_normal_(m.weight, std=0.02)
-                if isinstance(m, nn.Linear) and m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.LayerNorm):
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.trunc_normal_(m.weight, std=0.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
-                nn.init.constant_(m.weight, 1.0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
+    @property
+    def size_divisibility(self):
+        return self._size_divisibility
+
+    def get_model_size_util(self, stage_id, blk_id):
+        total_params = 0
+        total_params += sum(p.numel() for p in self.patch_embed.parameters())
+        for i, layer in enumerate(self.layers):
+            cut = blk_id+1 if i == stage_id else len(layer.blocks)
+            total_params += sum(p.numel() for p in layer.blocks[:cut].parameters())
+            if i == stage_id:
+                break
+        return total_params
+
+    def get_model_size_from(self, stage_id, blk_id):
+        total_params = 0
+        for i, layer in enumerate(self.layers):
+            if i < stage_id:
+                continue
+            cut = blk_id if i == stage_id else 0
+            total_params += sum(p.numel() for p in layer.blocks[cut:].parameters())
+            if layer.downsample:
+                total_params += sum(p.numel() for p in layer.downsample.parameters())
+
+        total_params += sum(p.numel() for p in self.norm.parameters())
+        total_params += sum(p.numel() for p in self.head.parameters())
+        return total_params
+
+    def forward_until(self, x, stage_id, blk_id):
+        x = self.patch_embed(x)
+
+        Wh, Ww = x.size(2), x.size(3)
+        if self.ape:
+            absolute_pos_embed = F.interpolate(
+                self.absolute_pos_embed, size=(Wh, Ww), mode="bicubic"
+            )
+            x = (x + absolute_pos_embed).flatten(2).transpose(1, 2)  # B Wh*Ww C
+        else:
+            x = x.flatten(2).transpose(1, 2)
+        x = self.pos_drop(x)
+        outs = {}
+        for i, layer in enumerate(self.layers):
+            x_out, H, W, x, Wh, Ww = layer(x, end=blk_id if i == stage_id else None)
+            if i in self.out_indices:
+                norm_layer = getattr(self, f"norm{i}")
+                x_out = norm_layer(x_out)
+
+                out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
+                outs["p{}".format(i)] = out
+            if i == stage_id:
+                break
+        return x, outs
+    
+    def forward_from(self, x, stage_id, blk_id, outs):
+        for i, layer in enumerate(self.layers):
+            if i < stage_id:
+                continue
+            x_out, H, W, x, Wh, Ww = layer(x, start=blk_id if i == stage_id else None)
+            if i in self.out_indices:
+                norm_layer = getattr(self, f"norm{i}")
+                x_out = norm_layer(x_out)
+
+                out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
+                outs["p{}".format(i)] = out
+        return outs
 
     def forward(self, x):
         """Forward function."""
@@ -673,14 +784,9 @@ class SwinTransformer(nn.Module):
                 x_out = norm_layer(x_out)
 
                 out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
-                outs["res{}".format(i + 2)] = out
+                outs["p{}".format(i)] = out
 
         return outs
-
-    def train(self, mode=True):
-        """Convert the model into training mode while keep layers freezed."""
-        super(SwinTransformer, self).train(mode)
-        self._freeze_stages()
 
 
 @BACKBONE_REGISTRY.register()
