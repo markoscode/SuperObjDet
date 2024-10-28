@@ -3,7 +3,7 @@ from .stiching_layers.stitching_layers import STITCH_LAYERS, SimpleStitchMoE
 import torch
 import torch.nn as nn
 import numpy as np
-from detectron2.modeling import BACKBONE_REGISTRY, Backbone
+from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
 from .swin import SwinTransformer
 
 def unpaired_stitching(front_depth=12, end_depth=24, idx_limit=None):
@@ -150,26 +150,27 @@ class SNNet(Backbone):
         norm_layer = nn.LayerNorm
         anchor_names = ["TINY", "SMALL", "BASE"]
         anchors = []
-        stiching_layer_type = cfg.SNNET.LAYER_TYPE if cfg.SNNET.LAYER_TYPE else "fc"
+        stiching_layer_type = cfg.SWIN_SNNET.LAYER_TYPE if cfg.SWIN_SNNET.LAYER_TYPE else "fc"
         new_stitch = None
-        super(SNNet, self).__init__()
+        super().__init__()
         for anc_name in anchor_names:
-            pretrain_img_size = cfg.MODEL.SWIN.PRETRAIN_IMG_SIZE
-            patch_size = cfg.MODEL.SWIN.PATCH_SIZE
-            embed_dim = cfg.MODEL.SWIN[anc_name].EMBED_DIM
-            depths = cfg.MODEL.SWIN[anc_name].DEPTHS
-            num_heads = cfg.MODEL.SWIN[anc_name].NUM_HEADS
-            window_size = cfg.MODEL.SWIN[anc_name].WINDOW_SIZE
-            mlp_ratio = cfg.MODEL.SWIN.MLP_RATIO
-            qkv_bias = cfg.MODEL.SWIN.QKV_BIAS
-            qk_scale = cfg.MODEL.SWIN.QK_SCALE
-            drop_rate = cfg.MODEL.SWIN.DROP_RATE
-            attn_drop_rate = cfg.MODEL.SWIN[anc_name].ATTN_DROP_RATE
-            drop_path_rate = cfg.MODEL.SWIN.DROP_PATH_RATE
-            ape = cfg.MODEL.SWIN[anc_name].APE
-            patch_norm = cfg.MODEL.SWIN[anc_name].PATCH_NORM
-            use_checkpoint = cfg.MODEL.SWIN.USE_CHECKPOINT
-            anchors.append(SwinTransformer(
+            pretrain_img_size = cfg.SWIN_SNNET[anc_name].PRETRAIN_IMG_SIZE
+            patch_size = cfg.SWIN_SNNET[anc_name].PATCH_SIZE
+            embed_dim = cfg.SWIN_SNNET[anc_name].EMBED_DIM
+            depths = cfg.SWIN_SNNET[anc_name].DEPTHS
+            num_heads = cfg.SWIN_SNNET[anc_name].NUM_HEADS
+            window_size = cfg.SWIN_SNNET[anc_name].WINDOW_SIZE
+            mlp_ratio = cfg.SWIN_SNNET[anc_name].MLP_RATIO
+            qkv_bias = cfg.SWIN_SNNET[anc_name].QKV_BIAS
+            qk_scale = cfg.SWIN_SNNET[anc_name].QK_SCALE
+            drop_rate = cfg.SWIN_SNNET[anc_name].DROP_RATE
+            attn_drop_rate = cfg.SWIN_SNNET[anc_name].ATTN_DROP_RATE
+            drop_path_rate = cfg.SWIN_SNNET[anc_name].DROP_PATH_RATE
+            ape = cfg.SWIN_SNNET[anc_name].APE
+            patch_norm = cfg.SWIN_SNNET[anc_name].PATCH_NORM
+            use_checkpoint = cfg.SWIN_SNNET[anc_name].USE_CHECKPOINT
+            
+            new_anchor = SwinTransformer(
                 pretrain_img_size,
                 patch_size,
                 in_chans,
@@ -187,29 +188,15 @@ class SNNet(Backbone):
                 ape,
                 patch_norm,
                 use_checkpoint=use_checkpoint,
-            ))
-        #STICHNET SPECIFIC PARAMETERS
-        #set to "fc" by defualt?
-        
-        
+            )
+            anchors.append(new_anchor)
 
-        
-        self._out_features = cfg.MODEL.SWIN.OUT_FEATURES
-
-        '''self._out_feature_strides = {
-            "res2": 4,
-            "res3": 8,
-            "res4": 16,
-            "res5": 32,
-        }
-        # Need to check this out since we have different anchors now?
+        self.out_indices = anchors[-1].out_indices
+        self._out_features = ["res{}".format(i) for i in self.out_indices]
         self._out_feature_channels = {
-            "res2": self.num_features[0],
-            "res3": self.num_features[1],
-            "res4": self.num_features[2],
-            "res5": self.num_features[3],
-        }'''
-
+            "res{}".format(i): anchors[-1].embed_dim * 2**i for i in self.out_indices
+        }
+        self._out_feature_strides = {"res{}".format(i): 2 ** (i + 2) for i in self.out_indices}
         self.anchors = nn.ModuleList(anchors) # list of anchors
         stage_depths = [anc.depths for anc in self.anchors]
         self.new_stitch = new_stitch
@@ -223,38 +210,12 @@ class SNNet(Backbone):
         self.stitch_configs = {}
         self.num_configs = 0
         
-        for i in range(len(self.anchors)):
-            total_configs.append({
-                'comb_id': [i],
-                'stitch_cfgs': [],
-                'stitch_layers': []
-            })
-        '''for i in range(len(self.anchors)):
-            if config is not None and (not config.TRAIN.FULL_TUNE) and (not config.EVAL_MODE):
-                tune_layer = config.TRAIN.TUNE_LAYERS.split("#")
-                if tune_layer[0] == "stitch":
-                    continue
-                elif tune_layer[0] == "anchor_stitch":
-                    anchors_idx = [int(v) for v in tune_layer[1].split(",")]
-                    if i in anchors_idx:
-                        total_configs.append({
-                            'comb_id': [i],
-                            'stitch_cfgs': [],
-                            'stitch_layers': []
-                        })
-                        print(f"--- Adding stitch config for anchor {i}")
-                elif tune_layer[0] == "dynamic_anchor_stitch":
-                    total_configs.append({
-                        'comb_id': [i],
-                        'stitch_cfgs': [],
-                        'stitch_layers': []
-                    })
-            else:
-                total_configs.append({
-                    'comb_id': [i],
-                    'stitch_cfgs': [],
-                    'stitch_layers': []
-                })'''
+        #for i in range(len(self.anchors)):
+        #    total_configs.append({
+        #        'comb_id': [i],
+        #        'stitch_cfgs': [],
+        #        'stitch_layers': []
+        #    })
 
         # iterate through all stages
         for i in range(4):
@@ -278,11 +239,7 @@ class SNNet(Backbone):
             self.stitch_layers.append(stage_stitching_layers)
 
         self.stitch_configs = {i: cfg for i, cfg in enumerate(total_configs)}
-        # self.num_configs = len(total_configs)
-        # self.stitch_config_id = 0
-    
-        # hardcoding for probenets
-        # obtained the following indices from probe_visualizations.ipynb
+
         new_stitches = [(0, 2), (0, 3), (1, 4), (1, 5), (1, 6), (2, 7), (2, 8), (2, 9), (4, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15), (3, 16)]
         new_total_configs = []
         j = 0
@@ -340,15 +297,19 @@ class SNNet(Backbone):
                     for front_id, end_id in stitch_positions:
                         front_blk_feat = anchor_features[front][stage_id][front_id]
                         end_blk_feat = anchor_features[end][stage_id][end_id - 1]
+                        #print(front_blk_feat.shape, end_blk_feat.shape)
                         w, b = ps_inv(front_blk_feat, end_blk_feat)
                         weight_candidates.append(w)
                         bias_candidates.append(b)
+                        #print(w.shape, b.shape)
                     weights = torch.stack(weight_candidates).mean(dim=0)
                     bias = torch.stack(bias_candidates).mean(dim=0)
                     stitch_layer =  self.stitch_layers[stage_id][j][stitch_layer_id]
                     if isinstance(stitch_layer, SimpleStitchMoE) and layer_id is not None:
                           stitch_layer.init_stitch_weights_bias(weights, bias, layer_id=layer_id)
                     else:
+                        #print(weights.shape, bias.shape, stitch_layer)
+                        #print(stitch_layer_id, stitch_positions, comb, stage_id)
                         stitch_layer.init_stitch_weights_bias(weights, bias)
                     print(f'Initialized Stitching Model {front} to Model {end}, Stage {stage_id}, Layer {stitch_layer_id}')
 
@@ -400,7 +361,7 @@ class SNNet(Backbone):
 
         cfg = stitch_cfgs[0]
 
-        x, outs = self.anchors[comb_id[0]].forward_until(x, stage_id=stitch_stage_id, blk_id=cfg[0])
+        x, outs, wDims = self.anchors[comb_id[0]].forward_until(x, stage_id=stitch_stage_id, blk_id=cfg[0])
         #if return_activation:
         #    next_anchor_activation = self.anchors[comb_id[1]].forward_until(input_tensor, stage_id=stitch_stage_id, blk_id=(cfg[1]-1))
 
@@ -415,9 +376,16 @@ class SNNet(Backbone):
         #if return_activation:
         #    projected_activation = x
 
-        x = self.anchors[comb_id[1]].forward_from(x, stage_id=stitch_stage_id, blk_id=cfg[1], outs=outs)
+        x = self.anchors[comb_id[1]].forward_from(x, stage_id=stitch_stage_id, blk_id=cfg[1], outs=outs, wDims=wDims)
         #if return_activation:
             # print(f"returning x:{x.shape} prj_act:{projected_activation.shape} next_anchor_active: {next_anchor_activation.shape} ")
         #    return x, projected_activation, next_anchor_activation
         #else:
         return x
+
+    def output_shape(self):
+        return self.anchors[0].output_shape()
+
+    @property
+    def size_divisibility(self):
+        return 32

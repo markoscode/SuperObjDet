@@ -2,34 +2,34 @@ _BASE_: ../maskformer2_R50_bs16_50ep.yaml
 MODEL:
   BACKBONE:
     NAME: "SNNet"
-  SWIN:
-    TINY:
-      EMBED_DIM: 96
-      DEPTHS: [2, 2, 6, 2]
-      NUM_HEADS: [3, 6, 12, 24]
-      WINDOW_SIZE: 7
-      APE: False
-      DROP_PATH_RATE: 0.3
-      PATCH_NORM: True
-      WEIGHTS: "swin_tiny_patch4_window7_224.pkl"
-    SMALL:
-      EMBED_DIM: 96
-      DEPTHS: [2, 2, 18, 2]
-      NUM_HEADS: [3, 6, 12, 24]
-      WINDOW_SIZE: 7
-      APE: False
-      DROP_PATH_RATE: 0.3
-      PATCH_NORM: True
-      WEIGHTS: "swin_small_patch4_window7_224.pkl"
-    BASE:
-      EMBED_DIM: 128
-      DEPTHS: [2, 2, 18, 2]
-      NUM_HEADS: [4, 8, 16, 32]
-      WINDOW_SIZE: 12
-      APE: False
-      DROP_PATH_RATE: 0.3
-      PATCH_NORM: True
-      PRETRAIN_IMG_SIZE: 384
-      WEIGHTS: "swin_base_patch4_window12_384.pkl"
   PIXEL_MEAN: [123.675, 116.280, 103.530]
   PIXEL_STD: [58.395, 57.120, 57.375]
+SWIN_SNNET:
+  TINY:
+    EMBED_DIM: 96
+    DEPTHS: [2, 2, 6, 2]
+    NUM_HEADS: [3, 6, 12, 24]
+    WINDOW_SIZE: 7
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    WEIGHTS: "https://dl.fbaipublicfiles.com/maskformer/mask2former/coco/instance/maskformer2_swin_tiny_bs16_50ep/model_final_86143f.pkl"
+  SMALL:
+    EMBED_DIM: 96
+    DEPTHS: [2, 2, 18, 2]
+    NUM_HEADS: [3, 6, 12, 24]
+    WINDOW_SIZE: 7
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    WEIGHTS: "https://dl.fbaipublicfiles.com/maskformer/mask2former/coco/instance/maskformer2_swin_small_bs16_50ep/model_final_1e7f22.pkl"
+  BASE:
+    EMBED_DIM: 128
+    DEPTHS: [2, 2, 18, 2]
+    NUM_HEADS: [4, 8, 16, 32]
+    WINDOW_SIZE: 12
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    PRETRAIN_IMG_SIZE: 384
+    WEIGHTS: "https://dl.fbaipublicfiles.com/maskformer/mask2former/coco/instance/maskformer2_swin_base_384_bs16_50ep/model_final_f6e0f6.pkl"

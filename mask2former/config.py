@@ -69,7 +69,7 @@ def add_maskformer2_config(cfg):
     cfg.MODEL.SEM_SEG_HEAD.TRANSFORMER_ENC_LAYERS = 0
     # pixel decoder
     cfg.MODEL.SEM_SEG_HEAD.PIXEL_DECODER_NAME = "BasePixelDecoder"
-
+    
     # swin transformer backbone
     cfg.MODEL.SWIN = CN()
     cfg.MODEL.SWIN.PRETRAIN_IMG_SIZE = 224
@@ -88,6 +88,70 @@ def add_maskformer2_config(cfg):
     cfg.MODEL.SWIN.PATCH_NORM = True
     cfg.MODEL.SWIN.OUT_FEATURES = ["res2", "res3", "res4", "res5"]
     cfg.MODEL.SWIN.USE_CHECKPOINT = False
+
+    #SWIN SNNET CONFIG Parameters
+    cfg.SWIN_SNNET = CN()
+    cfg.SWIN_SNNET.LAYER_TYPE = "fc"
+
+    # TINY Parameters
+    cfg.SWIN_SNNET.TINY = CN()
+    cfg.SWIN_SNNET.TINY.PRETRAIN_IMG_SIZE = 224
+    cfg.SWIN_SNNET.TINY.PATCH_SIZE = 4
+    cfg.SWIN_SNNET.TINY.EMBED_DIM = 96
+    cfg.SWIN_SNNET.TINY.DEPTHS = [2, 2, 6, 2]
+    cfg.SWIN_SNNET.TINY.NUM_HEADS = [3, 6, 12, 24]
+    cfg.SWIN_SNNET.TINY.WINDOW_SIZE = 7
+    cfg.SWIN_SNNET.TINY.MLP_RATIO = 4.0
+    cfg.SWIN_SNNET.TINY.QKV_BIAS = True
+    cfg.SWIN_SNNET.TINY.QK_SCALE = None
+    cfg.SWIN_SNNET.TINY.DROP_RATE = 0.0
+    cfg.SWIN_SNNET.TINY.ATTN_DROP_RATE = 0.0
+    cfg.SWIN_SNNET.TINY.DROP_PATH_RATE = 0.3
+    cfg.SWIN_SNNET.TINY.APE = False
+    cfg.SWIN_SNNET.TINY.PATCH_NORM = True
+    cfg.SWIN_SNNET.TINY.OUT_FEATURES = ["res2", "res3", "res4", "res5"]
+    cfg.SWIN_SNNET.TINY.USE_CHECKPOINT = False
+    cfg.SWIN_SNNET.TINY.WEIGHTS= "swin_tiny_patch4_window7_224.pkl"
+
+    # SMALL Parameters
+    cfg.SWIN_SNNET.SMALL = CN()
+    cfg.SWIN_SNNET.SMALL.PRETRAIN_IMG_SIZE = 224
+    cfg.SWIN_SNNET.SMALL.PATCH_SIZE = 4
+    cfg.SWIN_SNNET.SMALL.EMBED_DIM = 96
+    cfg.SWIN_SNNET.SMALL.DEPTHS = [2, 2, 6, 2]
+    cfg.SWIN_SNNET.SMALL.NUM_HEADS = [3, 6, 12, 24]
+    cfg.SWIN_SNNET.SMALL.WINDOW_SIZE = 7
+    cfg.SWIN_SNNET.SMALL.MLP_RATIO = 4.0
+    cfg.SWIN_SNNET.SMALL.QKV_BIAS = True
+    cfg.SWIN_SNNET.SMALL.QK_SCALE = None
+    cfg.SWIN_SNNET.SMALL.DROP_RATE = 0.0
+    cfg.SWIN_SNNET.SMALL.ATTN_DROP_RATE = 0.0
+    cfg.SWIN_SNNET.SMALL.DROP_PATH_RATE = 0.3
+    cfg.SWIN_SNNET.SMALL.APE = False
+    cfg.SWIN_SNNET.SMALL.PATCH_NORM = True
+    cfg.SWIN_SNNET.SMALL.OUT_FEATURES = ["res2", "res3", "res4", "res5"]
+    cfg.SWIN_SNNET.SMALL.USE_CHECKPOINT = False
+    cfg.SWIN_SNNET.SMALL.WEIGHTS= "swin_small_patch4_window7_224.pkl"
+
+    # BASE Parameters
+    cfg.SWIN_SNNET.BASE = CN()
+    cfg.SWIN_SNNET.BASE.PRETRAIN_IMG_SIZE = 224
+    cfg.SWIN_SNNET.BASE.PATCH_SIZE = 4
+    cfg.SWIN_SNNET.BASE.EMBED_DIM = 96
+    cfg.SWIN_SNNET.BASE.DEPTHS = [2, 2, 6, 2]
+    cfg.SWIN_SNNET.BASE.NUM_HEADS = [3, 6, 12, 24]
+    cfg.SWIN_SNNET.BASE.WINDOW_SIZE = 7
+    cfg.SWIN_SNNET.BASE.MLP_RATIO = 4.0
+    cfg.SWIN_SNNET.BASE.QKV_BIAS = True
+    cfg.SWIN_SNNET.BASE.QK_SCALE = None
+    cfg.SWIN_SNNET.BASE.DROP_RATE = 0.0
+    cfg.SWIN_SNNET.BASE.ATTN_DROP_RATE = 0.0
+    cfg.SWIN_SNNET.BASE.DROP_PATH_RATE = 0.3
+    cfg.SWIN_SNNET.BASE.APE = False
+    cfg.SWIN_SNNET.BASE.PATCH_NORM = True
+    cfg.SWIN_SNNET.BASE.OUT_FEATURES = ["res2", "res3", "res4", "res5"]
+    cfg.SWIN_SNNET.BASE.USE_CHECKPOINT = False
+    cfg.SWIN_SNNET.BASE.WEIGHTS= "swin_base_patch4_window12_384.pkl"
 
     # NOTE: maskformer2 extra configs
     # transformer module

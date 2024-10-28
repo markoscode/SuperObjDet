@@ -569,13 +569,15 @@ class SwinTransformer(Backbone):
         super().__init__()
 
         self.pretrain_img_size = pretrain_img_size
+        self.depths = depths
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.ape = ape
         self.patch_norm = patch_norm
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
-
+        head_dim = embed_dim // num_heads[0]
+        self.stage_dims = [head_dim*n_heads for n_heads in num_heads]
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
             patch_size=patch_size,
@@ -635,11 +637,11 @@ class SwinTransformer(Backbone):
             self.add_module(layer_name, layer)
 
         self._freeze_stages()
-        self._out_features = ["p{}".format(i) for i in self.out_indices]
+        self._out_features = ["res{}".format(i+2) for i in self.out_indices]
         self._out_feature_channels = {
-            "p{}".format(i): self.embed_dim * 2**i for i in self.out_indices
+            "res{}".format(i+2): self.embed_dim * 2**i for i in self.out_indices
         }
-        self._out_feature_strides = {"p{}".format(i): 2 ** (i + 2) for i in self.out_indices}
+        self._out_feature_strides = {"res{}".format(i+2): 2 ** (i + 2) for i in self.out_indices}
         self._size_devisibility = 32
 
         self.apply(self._init_weights)
@@ -655,16 +657,15 @@ class SwinTransformer(Backbone):
         else:
             x = x.flatten(2).transpose(1, 2)
         x = self.pos_drop(x)
-        return x
+        return x, Wh, Ww
 
     def extract_block_features(self, x):
         features = {}
-        x = self.forward_patch_embed(x)
-        outs = {}
+        x, Wh, Ww = self.forward_patch_embed(x)
         for i in range(self.num_layers):
             layer = self.layers[i]
-            x_out, H, W, x, Wh, Ww, features = layer(x, Wh, Ww, extract_feat=True)
-            features[i] = features
+            x_out, H, W, x, Wh, Ww, layer_feat = layer(x, Wh, Ww, extract_feat=True)
+            features[i] = layer_feat
         return features
 
     def _freeze_stages(self):
@@ -692,6 +693,15 @@ class SwinTransformer(Backbone):
         elif isinstance(m, nn.LayerNorm):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
+
+    def output_shape(self):
+        out =  {
+            name: ShapeSpec(
+                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+            )
+            for name in self._out_features
+        }
+        return out
 
     @property
     def size_divisibility(self):
@@ -735,28 +745,29 @@ class SwinTransformer(Backbone):
         x = self.pos_drop(x)
         outs = {}
         for i, layer in enumerate(self.layers):
-            x_out, H, W, x, Wh, Ww = layer(x, end=blk_id if i == stage_id else None)
+            x_out, H, W, x, Wh, Ww = layer(x, Wh, Ww, end=blk_id if i == stage_id else None)
             if i in self.out_indices:
                 norm_layer = getattr(self, f"norm{i}")
                 x_out = norm_layer(x_out)
 
                 out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
-                outs["p{}".format(i)] = out
+                outs["res{}".format(i+2)] = out
             if i == stage_id:
                 break
-        return x, outs
+        return x, outs, (Wh, Ww)
     
-    def forward_from(self, x, stage_id, blk_id, outs):
+    def forward_from(self, x, stage_id, blk_id, outs, wDims):
+        Wh, Ww = wDims
         for i, layer in enumerate(self.layers):
             if i < stage_id:
                 continue
-            x_out, H, W, x, Wh, Ww = layer(x, start=blk_id if i == stage_id else None)
+            x_out, H, W, x, Wh, Ww = layer(x, Wh, Ww, start=blk_id if i == stage_id else None)
             if i in self.out_indices:
                 norm_layer = getattr(self, f"norm{i}")
                 x_out = norm_layer(x_out)
 
                 out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
-                outs["p{}".format(i)] = out
+                outs["res{}".format(i+2)] = out
         return outs
 
     def forward(self, x):
@@ -784,7 +795,7 @@ class SwinTransformer(Backbone):
                 x_out = norm_layer(x_out)
 
                 out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
-                outs["p{}".format(i)] = out
+                outs["res{}".format(i+2)] = out
 
         return outs
 

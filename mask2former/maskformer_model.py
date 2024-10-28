@@ -96,6 +96,7 @@ class MaskFormer(nn.Module):
     @classmethod
     def from_config(cls, cfg):
         backbone = build_backbone(cfg)
+
         sem_seg_head = build_sem_seg_head(cfg, backbone.output_shape())
 
         # Loss parameters:

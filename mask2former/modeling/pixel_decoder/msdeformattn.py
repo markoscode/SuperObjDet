@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.init import xavier_uniform_, constant_, uniform_, normal_
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
@@ -147,6 +147,7 @@ class MSDeformAttnTransformerEncoder(nn.Module):
         self.runtime_depth = 0
         self.layers = _get_clones(encoder_layer, num_layers)
         self.num_layers = num_layers
+        self.set_max_net()
 
     @staticmethod
     def get_reference_points(spatial_shapes, valid_ratios, device):
@@ -346,7 +347,7 @@ class MSDeformAttnPixelDecoder(nn.Module):
         ret["common_stride"] = cfg.MODEL.SEM_SEG_HEAD.COMMON_STRIDE
         return ret
 
-    @autocast(enabled=False)
+    @autocast(enabled=False, device_type="cuda")
     def forward_features(self, features):
         srcs = []
         pos = []
