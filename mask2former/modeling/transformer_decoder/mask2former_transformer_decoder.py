@@ -272,7 +272,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         self.mask_classification = mask_classification
 
         #weight sharing
-        self.DEPTH_LIST = [np.arange(9)]
+        self.DEPTH_LIST = [np.arange(3)]
         self.runtime_depth = 0
 
         # positional encoding

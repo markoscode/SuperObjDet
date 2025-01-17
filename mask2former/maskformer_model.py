@@ -382,8 +382,8 @@ class MaskFormer(nn.Module):
 
     def set_max_net(self):
         return {"backbone": self.backbone.set_max_net(),
-                       "pixel_decoder": self.sem_seg_head.pixel_decoder.transformer.set_max_net(),
-                       "predictor": self.sem_seg_head.predictor.set_max_net()}
+                "pixel_decoder": self.sem_seg_head.pixel_decoder.transformer.set_max_net(),
+                "predictor": self.sem_seg_head.predictor.set_max_net()}
 
     def set_active_subnet(self, backbone, pixel_decoder, predictor, **kwargs):
         self.backbone.set_active_subnet(backbone)
@@ -392,5 +392,5 @@ class MaskFormer(nn.Module):
 
     def sample_active_subnet(self):
         return {"backbone": self.backbone.sample_active_subnet(),
-                       "pixel_decoder": self.sem_seg_head.pixel_decoder.transformer.sample_active_subnet(),
-                       "predictor": self.sem_seg_head.predictor.sample_active_subnet()}
+                "pixel_decoder": self.sem_seg_head.pixel_decoder.transformer.sample_active_subnet(),
+                "predictor": self.sem_seg_head.predictor.sample_active_subnet()}
