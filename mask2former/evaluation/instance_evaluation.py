@@ -93,7 +93,8 @@ class InstanceSegEvaluator(COCOEvaluator):
                     coco_results,
                     task,
                     kpt_oks_sigmas=self._kpt_oks_sigmas,
-                    use_fast_impl=self._use_fast_impl,
+                    cocoeval_fn=COCOeval_opt if self._use_fast_impl else COCOeval,
+                    # use_fast_impl=self._use_fast_impl,
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
                 )
