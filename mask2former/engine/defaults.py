@@ -45,7 +45,7 @@ from detectron2.utils.events import CommonMetricPrinter, JSONWriter, Tensorboard
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
-from detectron2.engine import hooks
+from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, WSTrainer, TrainerBase, SNNETTrainer
 
 __all__ = [

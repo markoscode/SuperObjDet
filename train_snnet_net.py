@@ -27,12 +27,7 @@ import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog, build_detection_train_loader
-from detectron2.engine import (
-    
-    default_argument_parser,
-    default_setup,
-    launch,
-)
+
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -59,7 +54,12 @@ from mask2former import (
     add_maskformer2_config,
 )
 
-from mask2former.engine import DefaultSNNETTrainer
+from mask2former.engine import (
+    DefaultSNNETTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 
 class Trainer(DefaultSNNETTrainer):
     """
