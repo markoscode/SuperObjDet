@@ -11,7 +11,6 @@ try:
 except:
     pass
 
-import wandb
 
 import copy
 import itertools
@@ -318,12 +317,12 @@ def main(args):
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
     print("Command Line Args:", args)
-    wandb.init(
-        project=args.wandb_project_name,
-        name=args.wandb_run_name,
-        entity=args.wandb_entity,
-        config=args,
-    )
+    # wandb.init(
+    #     project=args.wandb_project_name,
+    #     name=args.wandb_run_name,
+    #     entity=args.wandb_entity,
+    #     config=args,
+    # )
     launch(
         main,
         args.num_gpus,
