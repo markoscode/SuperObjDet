@@ -129,4 +129,24 @@ dmypy.json
 .pyre/
 
 # Datasets
-./datasets/
+datasets/
+
+# WandB
+wandb/
+
+# Model checkpoints
+*.pth
+
+# Logs
+*.txt
+*.txt.*
+*.tfevents.*
+
+# Misc
+*.json
+!configs/**/*.json
+*.zip
+*.png
+last_checkpoint
+config.yaml
+.DS_Store
