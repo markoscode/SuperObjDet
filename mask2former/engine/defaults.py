@@ -124,6 +124,9 @@ Run on multiple machines:
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
 
+    parser.add_argument("--model-weights", default="", metavar="FILE", help="path to model checkpoint file")
+    parser.add_argument("--output-dir", default="", metavar="DIR", help="directory to save outputs")
+
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
