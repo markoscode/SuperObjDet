@@ -112,13 +112,13 @@ def rearrange_activations(activations):
     activations = activations.reshape(-1, n_channels)
     return activations
 
-def ps_inv(x1, x2):
+def ps_inv(x1, x2, device="cuda"):
     '''Least-squares solver given feature maps from two anchors.
     
     Source: https://github.com/renyi-ai/drfrankenstein/blob/main/src/comparators/compare_functions/ps_inv.py
     '''
-    x1 = rearrange_activations(x1)
-    x2 = rearrange_activations(x2)
+    x1 = rearrange_activations(x1).to(device=device)
+    x2 = rearrange_activations(x2).to(device=device)
 
     if not x1.shape[0] == x2.shape[0]:
         raise ValueError('Spatial size of compared neurons must match when ' \
@@ -129,7 +129,7 @@ def ps_inv(x1, x2):
     shape[-1] += 1
 
     # Calculate pseudo inverse
-    x1_ones = torch.ones(shape)
+    x1_ones = torch.ones(shape, device=device, dtype=x1.dtype)
     x1_ones[:, :-1] = x1
     A_ones = torch.matmul(torch.linalg.pinv(x1_ones), x2.to(x1_ones.device)).T
 
@@ -302,8 +302,10 @@ class SNNet(Backbone):
                         weight_candidates.append(w)
                         bias_candidates.append(b)
                         #print(w.shape, b.shape)
+
                     weights = torch.stack(weight_candidates).mean(dim=0)
                     bias = torch.stack(bias_candidates).mean(dim=0)
+
                     stitch_layer =  self.stitch_layers[stage_id][j][stitch_layer_id]
                     if isinstance(stitch_layer, SimpleStitchMoE) and layer_id is not None:
                           stitch_layer.init_stitch_weights_bias(weights, bias, layer_id=layer_id)
@@ -311,6 +313,7 @@ class SNNet(Backbone):
                         #print(weights.shape, bias.shape, stitch_layer)
                         #print(stitch_layer_id, stitch_positions, comb, stage_id)
                         stitch_layer.init_stitch_weights_bias(weights, bias)
+
                     print(f'Initialized Stitching Model {front} to Model {end}, Stage {stage_id}, Layer {stitch_layer_id}')
 
 
