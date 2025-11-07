@@ -137,8 +137,17 @@ class HungarianMatcher(nn.Module):
                 # Compute the focal loss between masks
                 cost_mask = batch_sigmoid_ce_loss_jit(out_mask, tgt_mask)
 
-                # Compute the dice loss betwen masks
-                cost_dice = batch_dice_loss_jit(out_mask, tgt_mask)
+                # Compute the dice loss betwen masks; fall back if JIT path hits unsupported backend
+                try:
+                    cost_dice = batch_dice_loss_jit(out_mask, tgt_mask)
+                except RuntimeError as e:
+                    # Some environments (e.g., specific CUDA/AMP modes) may raise
+                    # 'Global alloc not supported yet' from torchscript kernels.
+                    # Fall back to eager implementation to unblock training.
+                    if "Global alloc not supported yet" in str(e):
+                        cost_dice = batch_dice_loss(out_mask, tgt_mask)
+                    else:
+                        raise
             
             # Final cost matrix
             C = (

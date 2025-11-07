@@ -461,7 +461,6 @@ class WSTrainer(TrainerBase):
         """
         #logger.info("iterating subnets")
         #subnet_str = ""
-        losses = 0
         loss_dict_total = {}
         for i in range(self.dynamic_bs):
             if i == 0:
@@ -471,19 +470,29 @@ class WSTrainer(TrainerBase):
                 subnet_settings = self.model.module.sample_active_subnet()
             logger.info(f"current subnet {subnet_settings}")
             #subnet_str += str(subnet_settings) + ", "
+
+            # Forward pass for this subnet
             loss_dict = self.model(data)
+            # Normalize to a tensor loss for backward
             if isinstance(loss_dict, torch.Tensor):
-                losses += loss_dict
+                loss_tensor = loss_dict
                 loss_dict = {"total_loss": loss_dict}
             else:
-                losses += sum(loss_dict.values())
+                loss_tensor = sum(loss_dict.values())
 
+            # Accumulate metrics across subnets
             for key, value in loss_dict.items():
                 if key not in loss_dict_total:
                     loss_dict_total[key] = 0
                 loss_dict_total[key] += value
-            #wandb.log({f"loss for subnet {subnet_settings}": losses})
-        losses.backward()
+
+            # Backward per-subnet to avoid DDP "mark ready twice" when the same
+            # parameters participate in multiple forward graphs in a single backward.
+            if i < self.dynamic_bs - 1 and isinstance(self.model, DistributedDataParallel):
+                with self.model.no_sync():
+                    loss_tensor.backward()
+            else:
+                loss_tensor.backward()
 
         self.after_backward()
 
