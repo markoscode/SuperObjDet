@@ -45,8 +45,18 @@ from detectron2.utils.events import CommonMetricPrinter, JSONWriter, Tensorboard
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
-from . import hooks
-from .train_loop import AMPTrainer, SimpleTrainer, WSTrainer, TrainerBase, SNNETTrainer
+# Conditional import for inference-only mode (skip training dependencies)
+_INFERENCE_ONLY = True
+if not _INFERENCE_ONLY:
+    from . import hooks
+    from .train_loop import AMPTrainer, SimpleTrainer, WSTrainer, TrainerBase, SNNETTrainer
+else:
+    # Stub classes for inference-only mode - allows class definitions to parse
+    hooks = None
+    AMPTrainer = SimpleTrainer = WSTrainer = SNNETTrainer = None
+    class TrainerBase:
+        """Stub base class for inference-only mode."""
+        pass
 
 __all__ = [
     "create_ddp_model",

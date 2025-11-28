@@ -1,7 +1,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torchvision.ops.misc import Conv2dNormActivation
+# Compatibility shim for different torchvision versions
+try:
+    from torchvision.ops.misc import Conv2dNormActivation
+except ImportError:
+    from torchvision.ops.misc import ConvNormActivation as Conv2dNormActivation
 
 # def generate_stitch_layer(layer_type)
 # _stitch_layer_type = {

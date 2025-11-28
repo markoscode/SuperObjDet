@@ -3,7 +3,10 @@
 
 import logging
 import random
-import wandb
+try:
+    import wandb
+except ImportError:
+    wandb = None  # Optional - only needed for training
 import numpy as np
 import time
 import weakref

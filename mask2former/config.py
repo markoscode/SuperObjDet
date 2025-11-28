@@ -26,6 +26,17 @@ def add_maskformer2_config(cfg):
     cfg.SOLVER.OPTIMIZER = "ADAMW"
     cfg.SOLVER.BACKBONE_MULTIPLIER = 0.1
 
+    # Compatibility: add newer config keys that may exist in saved configs
+    # but aren't in detectron2 v0.6
+    if not hasattr(cfg.MODEL.RESNETS, 'RES4_DILATION'):
+        cfg.MODEL.RESNETS.RES4_DILATION = 1
+    if not hasattr(cfg.MODEL.RESNETS, 'RES5_DILATION'):
+        cfg.MODEL.RESNETS.RES5_DILATION = 1
+    if not hasattr(cfg.MODEL.RESNETS, 'RES5_MULTI_GRID'):
+        cfg.MODEL.RESNETS.RES5_MULTI_GRID = [1, 1, 1]
+    if not hasattr(cfg.MODEL.RESNETS, 'STEM_TYPE'):
+        cfg.MODEL.RESNETS.STEM_TYPE = "basic"
+
     # mask_former model config
     cfg.MODEL.MASK_FORMER = CN()
 

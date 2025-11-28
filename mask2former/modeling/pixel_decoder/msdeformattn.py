@@ -8,7 +8,11 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.init import xavier_uniform_, constant_, uniform_, normal_
-from torch.amp import autocast
+# Compatibility shim for different PyTorch versions
+try:
+    from torch.amp import autocast
+except ImportError:
+    from torch.cuda.amp import autocast
 
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
@@ -347,7 +351,7 @@ class MSDeformAttnPixelDecoder(nn.Module):
         ret["common_stride"] = cfg.MODEL.SEM_SEG_HEAD.COMMON_STRIDE
         return ret
 
-    @autocast(enabled=False, device_type="cuda")
+    @autocast(enabled=False)  # device_type removed for PyTorch 1.x compatibility
     def forward_features(self, features):
         srcs = []
         pos = []

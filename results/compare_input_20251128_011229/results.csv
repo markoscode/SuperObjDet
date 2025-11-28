@@ -1,0 +1,4 @@
+subnet,latency_ms,num_detections
+min,39.17,5
+middle,37.29,5
+max,43.33,4

@@ -1,12 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from .launch import *
-from .train_loop import *
+# For inference, we only need defaults - skip training imports for compatibility
+# with older detectron2 versions (v0.6)
+_INFERENCE_ONLY = True
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+if not _INFERENCE_ONLY:
+    from .launch import *
+    from .train_loop import *
+    from .hooks import *
+    __all__ = [k for k in globals().keys() if not k.startswith("_")]
+else:
+    __all__ = []
 
-
-# prefer to let hooks and defaults live in separate namespaces (therefore not in __all__)
-# but still make them available here
-from .hooks import *
+# Always import defaults (contains DefaultPredictor for inference)
 from .defaults import *
