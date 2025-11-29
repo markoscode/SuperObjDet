@@ -33,7 +33,10 @@ RUN pip install --no-cache-dir \
     scipy \
     timm==0.6.13 \
     fvcore \
-    omegaconf
+    omegaconf \
+    grpcio \
+    grpcio-tools \
+    protobuf
 
 # Install detectron2 v0.6 (compatible with PyTorch 1.10)
 RUN pip install --no-cache-dir 'git+https://github.com/facebookresearch/detectron2.git@v0.6'
@@ -65,5 +68,14 @@ COPY sem_ade_output_2/model_final.pth /workspace/sem_ade_output_2/model_final.pt
 COPY inference_server.py /workspace/inference_server.py
 COPY input.jpg /workspace/input.jpg
 
-# Default command
-CMD ["python", "inference_server.py", "--print-labels"]
+# Copy gRPC server and generated stubs
+COPY detection_service /workspace/detection_service
+COPY grpc_server.py /workspace/grpc_server.py
+COPY grpc_client_test.py /workspace/grpc_client_test.py
+
+# Expose gRPC port
+EXPOSE 50051
+
+# Default command: run gRPC server
+# Override with: docker run ... python inference_server.py --help
+CMD ["python", "grpc_server.py", "--port", "50051"]

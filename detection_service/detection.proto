@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package wsobjdet;
+
+// Detection service for WS-Mask2Former model
+// Enables IPC between Pylot container and model container
+service DetectionService {
+    // Run detection on a single image
+    rpc Detect(DetectRequest) returns (DetectResponse);
+
+    // Switch the active subnet configuration
+    rpc SetSubnet(SetSubnetRequest) returns (SetSubnetResponse);
+
+    // Get current model status and configuration
+    rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+
+// Request to run detection on an image
+message DetectRequest {
+    // Image data as raw bytes (BGR format, row-major)
+    bytes image_data = 1;
+
+    // Image dimensions
+    int32 width = 2;
+    int32 height = 3;
+
+    // Number of channels (typically 3 for BGR)
+    int32 channels = 4;
+
+    // Optional: override current subnet for this request only
+    // Empty string means use current subnet setting
+    string subnet = 5;
+
+    // Minimum confidence score threshold (default: 0.3)
+    float min_score = 6;
+
+    // Minimum bounding box area in pixels (default: 200)
+    float min_area = 7;
+
+    // If true, return all ADE20K labels; if false, only Pylot-relevant labels
+    bool all_labels = 8;
+}
+
+// Single detection result
+message Detection {
+    // Bounding box coordinates (pixels)
+    int32 x_min = 1;
+    int32 y_min = 2;
+    int32 x_max = 3;
+    int32 y_max = 4;
+
+    // Class label (e.g., "car", "person", "truck")
+    string label = 5;
+
+    // Confidence score [0.0, 1.0]
+    float score = 6;
+
+    // Raw ADE20K class index (for debugging)
+    int32 class_index = 7;
+}
+
+// Response from detection
+message DetectResponse {
+    // List of detected objects
+    repeated Detection detections = 1;
+
+    // Model inference time in milliseconds (excludes network transfer)
+    float inference_time_ms = 2;
+
+    // Total server-side processing time in milliseconds
+    float total_time_ms = 3;
+
+    // Current subnet that was used
+    string subnet_used = 4;
+
+    // True if successful
+    bool success = 5;
+
+    // Error message if success=false
+    string error = 6;
+}
+
+// Request to switch subnet
+message SetSubnetRequest {
+    // Subnet name: "min", "middle", or "max"
+    string subnet = 1;
+}
+
+// Response from subnet switch
+message SetSubnetResponse {
+    bool success = 1;
+    string error = 2;
+
+    // Confirm the active subnet after switch
+    string active_subnet = 3;
+}
+
+// Request for status
+message StatusRequest {}
+
+// Status response
+message StatusResponse {
+    // Model loaded and ready
+    bool ready = 1;
+
+    // Current active subnet
+    string active_subnet = 2;
+
+    // Available subnet options
+    repeated string available_subnets = 3;
+
+    // GPU device in use
+    string device = 4;
+
+    // Model weights path
+    string weights_path = 5;
+}
